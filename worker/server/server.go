@@ -17,7 +17,7 @@ type Server struct {
 	CacheIndex *CacheIndex
 }
 
-func StartWorker(port string) *Server {
+func InitServer(port string) *Server {
 	handler := http.NewServeMux()
 
 	return &Server{
