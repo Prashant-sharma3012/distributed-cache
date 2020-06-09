@@ -1,5 +1,7 @@
 package main
 
-func main() {
+import "github.com/distributed-cache/manager"
 
+func main() {
+	manager.StartCacheServer()
 }
