@@ -17,12 +17,12 @@ type Server struct {
 	CacheIndex *CacheIndex
 }
 
-func InitServer() *Server {
+func InitServer(port string) *Server {
 	handler := http.NewServeMux()
 
 	return &Server{
 		Srv: &http.Server{
-			Addr:    ":3000",
+			Addr:    port,
 			Handler: handler,
 		},
 		Handler: handler,
