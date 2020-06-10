@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -53,7 +54,8 @@ func (s *Server) AddToCache(w http.ResponseWriter, r *http.Request) {
 	}
 
 	workerURL := BaseUrl + port + "/add"
-	resFromWorker, err1 := http.Post(workerURL, "application/json", r.Body)
+	reqBody, _ := json.Marshal(req)
+	resFromWorker, err1 := http.Post(workerURL, "application/json", bytes.NewBuffer(reqBody))
 	if err1 != nil {
 		http.Error(w, err1.Error(), http.StatusBadRequest)
 	}
@@ -76,10 +78,15 @@ func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	port := s.CacheIndex[req.Key].Addr
+	port, ok := s.CacheIndex[req.Key].Addr
+	if !ok {
+		http.Error(w, []byte("Not Found"), http.StatusNotFound)
+	}
+
 	workerURL := BaseUrl + port + "/get"
 
-	resFromWorker, err1 := http.Post(workerURL, "application/json", r.Body)
+	reqBody, _ := json.Marshal(req)
+	resFromWorker, err1 := http.Post(workerURL, "application/json", bytes.NewBuffer(reqBody))
 	if err1 != nil {
 		http.Error(w, err1.Error(), http.StatusBadRequest)
 	}
