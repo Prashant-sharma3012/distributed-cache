@@ -80,7 +80,7 @@ func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
 
 	port, ok := s.CacheIndex[req.Key].Addr
 	if !ok {
-		http.Error(w, []byte("Not Found"), http.StatusNotFound)
+		http.Error(w, "Not Found", http.StatusNotFound)
 	}
 
 	workerURL := BaseUrl + port + "/get"
