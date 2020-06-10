@@ -11,6 +11,7 @@ func (s *Server) AddToCache(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	s.Cache[req.Key] = req
@@ -26,11 +27,13 @@ func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	val, ok := s.Cache[req.Key]
 	if !ok {
 		http.Error(w, "Not Found", http.StatusNotFound)
+		return
 	}
 
 	json.NewEncoder(w).Encode(val)

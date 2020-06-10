@@ -13,38 +13,45 @@ import (
 var BaseUrl = "http://localhost:"
 
 func (s *Server) getWorkerAddress() (string, int) {
-	var workerToUse Worker
 	min := 0
+	pos := 0
 
 	for indx, worker := range *s.Workers {
 		if indx == 0 {
 			min = worker.KeyCount
-			workerToUse = worker
+			pos = indx
 		} else {
 			if worker.KeyCount < min {
 				min = worker.KeyCount
-				workerToUse = worker
+				pos = indx
 			}
 		}
 	}
 
-	workerToUse.Lock()
-	workerToUse.KeyCount++
-	workerToUse.Unlock()
+	(*s.Workers)[pos].Lock()
+	(*s.Workers)[pos].KeyCount++
+	(*s.Workers)[pos].Unlock()
 
-	return workerToUse.Addr, workerToUse.Id
+	return (*s.Workers)[pos].Addr, (*s.Workers)[pos].Id
 }
 
 func (s *Server) AddToCache(w http.ResponseWriter, r *http.Request) {
-	port, id := s.getWorkerAddress()
-
-	fmt.Println("Using worker" + strconv.Itoa(id) + "Running on port" + port)
-
 	var req Req
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
+
+	// check is key already present, error if yes
+	_, ok := s.CacheIndex[req.Key]
+	if ok {
+		http.Error(w, "Key Already Present", http.StatusAlreadyReported)
+		return
+	}
+
+	port, id := s.getWorkerAddress()
+	fmt.Println("Using worker" + strconv.Itoa(id) + "Running on port" + port)
 
 	s.CacheIndex[req.Key] = CacheIndexRecord{
 		WorkerId:  id,
@@ -58,6 +65,7 @@ func (s *Server) AddToCache(w http.ResponseWriter, r *http.Request) {
 	resFromWorker, err1 := http.Post(workerURL, "application/json", bytes.NewBuffer(reqBody))
 	if err1 != nil {
 		http.Error(w, err1.Error(), http.StatusBadRequest)
+		return
 	}
 
 	body, _ := ioutil.ReadAll(resFromWorker.Body)
@@ -76,11 +84,13 @@ func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	record, ok := s.CacheIndex[req.Key]
 	if !ok {
 		http.Error(w, "Not Found", http.StatusNotFound)
+		return
 	}
 
 	port := record.Addr
@@ -90,6 +100,7 @@ func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
 	resFromWorker, err1 := http.Post(workerURL, "application/json", bytes.NewBuffer(reqBody))
 	if err1 != nil {
 		http.Error(w, err1.Error(), http.StatusBadRequest)
+		return
 	}
 
 	body, _ := ioutil.ReadAll(resFromWorker.Body)
