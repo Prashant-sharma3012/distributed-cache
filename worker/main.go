@@ -8,9 +8,9 @@ import (
 	"github.com/distributed-cache/worker/server"
 )
 
-func StartWorker(port string) {
+func StartWorker(port string, id int) {
 	fmt.Println("Starting Worker")
-	s := server.InitServer(port)
+	s := server.InitServer(port, id)
 
 	fmt.Println("Initializing End Points")
 	api.InitRoutes(s)

@@ -2,22 +2,20 @@ package server
 
 import (
 	"net/http"
-	"time"
 )
 
-type CacheIndex struct {
-	AtNode    string
-	Key       string
-	CreatedAt time.Time
+type Cache struct {
+	Data map[string]interface{}
 }
 
 type Server struct {
-	Srv        *http.Server
-	Handler    *http.ServeMux
-	CacheIndex *CacheIndex
+	Id int
+	Srv     *http.Server
+	Handler *http.ServeMux
+	Cache   *Cache
 }
 
-func InitServer(port string) *Server {
+func InitServer(port string, id int) *Server {
 	handler := http.NewServeMux()
 
 	return &Server{
@@ -26,5 +24,7 @@ func InitServer(port string) *Server {
 			Handler: handler,
 		},
 		Handler: handler,
+		Cache:   &Cache{},
+		Id: id,
 	}
 }
