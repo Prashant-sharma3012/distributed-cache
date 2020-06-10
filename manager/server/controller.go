@@ -78,11 +78,12 @@ func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 
-	port, ok := s.CacheIndex[req.Key].Addr
+	record, ok := s.CacheIndex[req.Key]
 	if !ok {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	}
 
+	port := record.Addr
 	workerURL := BaseUrl + port + "/get"
 
 	reqBody, _ := json.Marshal(req)
