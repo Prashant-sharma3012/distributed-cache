@@ -4,15 +4,16 @@ import (
 	"net/http"
 )
 
-type Cache struct {
-	Data map[string]interface{}
+type Req struct {
+	Key   string      `json:"key"`
+	Value interface{} `json:"value"`
 }
 
 type Server struct {
-	Id int
+	Id      int
 	Srv     *http.Server
 	Handler *http.ServeMux
-	Cache   *Cache
+	Cache   map[string]interface{}
 }
 
 func InitServer(port string, id int) *Server {
@@ -24,7 +25,7 @@ func InitServer(port string, id int) *Server {
 			Handler: handler,
 		},
 		Handler: handler,
-		Cache:   &Cache{},
-		Id: id,
+		Id:      id,
+		Cache:   make(map[string]interface{}),
 	}
 }

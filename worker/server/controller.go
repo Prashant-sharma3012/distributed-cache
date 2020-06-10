@@ -1,12 +1,19 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 	"strconv"
 )
 
 func (s *Server) AddToCache(w http.ResponseWriter, r *http.Request) {
+	var req Req
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
 
+	s.Cache[req.Key] = req
 	w.Write([]byte("Key Added to Wroker" + strconv.Itoa(s.Id)))
 }
 
@@ -15,5 +22,12 @@ func (s *Server) RemoveFromCache(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
+	var req Req
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+	}
 
+	val := s.Cache[req.Key]
+	json.NewEncoder(w).Encode(val)
 }
