@@ -12,9 +12,15 @@ import (
 
 var BaseUrl = "http://localhost:"
 
-func (s *Server) getWorkerAddress() (string, int) {
+func (s *Server) getWorkerAddress() (string, string, int, bool) {
 	min := 0
 	pos := 0
+
+	// In case cache is full replace the record
+	if s.IsLimitReached() {
+		keyToRemove, addr, id := s.LeastRecentlyUsed()
+		return keyToRemove, addr, id, true
+	}
 
 	for indx, worker := range *s.Workers {
 		if indx == 0 {
@@ -32,7 +38,7 @@ func (s *Server) getWorkerAddress() (string, int) {
 	(*s.Workers)[pos].KeyCount++
 	(*s.Workers)[pos].Unlock()
 
-	return (*s.Workers)[pos].Addr, (*s.Workers)[pos].Id
+	return "", (*s.Workers)[pos].Addr, (*s.Workers)[pos].Id, false
 }
 
 func (s *Server) AddToCache(w http.ResponseWriter, r *http.Request) {
@@ -50,17 +56,24 @@ func (s *Server) AddToCache(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	port, id := s.getWorkerAddress()
+	keyToRemove, port, id, replaceRecord := s.getWorkerAddress()
 	fmt.Println("Using worker" + strconv.Itoa(id) + "Running on port" + port)
 
-	s.CacheIndex[req.Key] = CacheIndexRecord{
-		WorkerId:  id,
-		Key:       req.Key,
-		Addr:      port,
-		CreatedAt: time.Now(),
+	s.CacheIndex[req.Key] = &CacheIndexRecord{
+		WorkerId:   id,
+		Key:        req.Key,
+		Addr:       port,
+		CreatedAt:  time.Now(),
+		LastUsedOn: time.Now(),
 	}
 
 	workerURL := BaseUrl + port + "/add"
+	if replaceRecord {
+		fmt.Println("Removing Old Key: " + keyToRemove)
+		req.KeyToDelete = keyToRemove
+		workerURL = BaseUrl + port + "/replace"
+	}
+
 	reqBody, _ := json.Marshal(req)
 	resFromWorker, err1 := http.Post(workerURL, "application/json", bytes.NewBuffer(reqBody))
 	if err1 != nil {
@@ -87,13 +100,15 @@ func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	record, ok := s.CacheIndex[req.Key]
+	_, ok := s.CacheIndex[req.Key]
 	if !ok {
 		http.Error(w, "Not Found", http.StatusNotFound)
 		return
 	}
 
-	port := record.Addr
+	s.CacheIndex[req.Key].LastUsedOn = time.Now()
+
+	port := s.CacheIndex[req.Key].Addr
 	workerURL := BaseUrl + port + "/get"
 
 	reqBody, _ := json.Marshal(req)

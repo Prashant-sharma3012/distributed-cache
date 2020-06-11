@@ -5,8 +5,9 @@ import (
 )
 
 type Req struct {
-	Key   string      `json:"key"`
-	Value interface{} `json:"value"`
+	Key         string      `json:"key"`
+	Value       interface{} `json:"value"`
+	KeyToDelete string      `json:"keyToDelete"`
 }
 
 type Server struct {
