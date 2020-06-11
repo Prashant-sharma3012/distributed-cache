@@ -38,7 +38,22 @@ func (s *Server) ReplaceInCache(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) RemoveFromCache(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Key Removed From Wroker" + strconv.Itoa(s.Id)))
+	var req Req
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, ok := s.Cache[req.Key]
+	if !ok {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	delete(s.Cache, req.Key)
+
+	w.Write([]byte("Key Deleted from store"))
 }
 
 func (s *Server) GetFromCache(w http.ResponseWriter, r *http.Request) {
